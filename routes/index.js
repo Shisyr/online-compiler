@@ -3,11 +3,8 @@ const app = express.Router()
 var exec = require('child_process').exec;
 var fs = require('fs');
 
-app.get('/', (req, res) =>{
-  res.render('index');
-});
-
-app.post('/', (req, res) =>{
+function compile_Cpp(req, res)
+{
   var isHasInput = false;
   var isFinished = false;
   fs.appendFile('cpp/main.cpp', req.body.code, (err) =>{
@@ -50,7 +47,59 @@ app.post('/', (req, res) =>{
 
         });
     });
-    res.render('index');
+}
+
+function compile_Python(req, res)
+{
+  var isHasInput = false;
+  var isFinished = false;
+  fs.appendFile('python/main.py', req.body.code, (err) =>{
+    if(err) throw err;
+    console.log("Successfully written!");
+  });
+  if(req.body.input !== "")
+  {
+    isHasInput = true;
+    fs.appendFile('python/main.txt', req.body.input, (err) =>{
+      if(err) throw err;
+      console.log("Successfully written input!");
+    });
+  }
+  var code = "python3 python/main.py";
+  if(isHasInput)
+  {
+    code += " < python/main.txt";
+  }
+  exec(code, (err, stdout, stderr)=>{
+      console.log(stdout);
+      isFinished = true;
+      if(isFinished)
+      {
+        fs.unlink('python/main.py', (err)=>{
+          if(err) throw err;
+          console.log("main.py deleted!");
+        });
+        fs.unlink('python/main.txt', (err) =>{
+          if(err) throw err;
+          console.log("main.txt deleted!");
+        });
+      }
+  });
+}
+app.get('/', (req, res) =>{
+  res.render('index');
+});
+
+app.post('/', (req, res) =>{
+  if(req.body.language == "C++")
+  {
+    compile_Cpp(req, res);
+  }
+  else if(req.body.language == "Python")
+  {
+    compile_Python(req, res);
+  }
+  res.render('index');
 });
 
 
